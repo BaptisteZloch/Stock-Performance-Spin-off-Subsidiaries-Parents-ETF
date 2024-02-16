@@ -1,0 +1,1 @@
+This folder contains the data used in the project if bloomberg is not available will running the project.

@@ -1,0 +1,11 @@
+pandas
+numpy
+seaborn
+matplotlib
+bokeh
+tqdm
+scipy
+statsmodels
+ipykernel
+black
+openpyxl

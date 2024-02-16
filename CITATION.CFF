@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it using the following DOI.
+title: Replicating research paper "The Stock Price Performance of Spin-Off Subsidiaries, Their Parents, and the Spin-Off ETF, 2001-2013"
+version: 0.2.1
+authors:
+  - name: Flavie BICKERT
+    email: flavie.bickert@dauphine.eu
+  - name: Baptiste ZLOCH
+    email: baptiste.zloch@dauphine.eu
+license: MIT
