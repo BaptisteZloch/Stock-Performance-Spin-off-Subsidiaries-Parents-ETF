@@ -9,3 +9,5 @@ statsmodels
 ipykernel
 black
 openpyxl
+dash
+# streamlit
