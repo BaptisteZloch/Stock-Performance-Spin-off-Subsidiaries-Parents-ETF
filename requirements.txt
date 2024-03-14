@@ -9,5 +9,7 @@ statsmodels
 ipykernel
 black
 openpyxl
-dash
-# streamlit
+streamlit
+yfinance
+scikit-learn
+quant_invest_lab
