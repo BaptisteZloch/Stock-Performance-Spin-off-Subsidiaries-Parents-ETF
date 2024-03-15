@@ -253,7 +253,7 @@ def plot_from_trade_df(
     ax[1, 1].set_ylabel("Average return", fontsize=15)
     ax[1, 1].set_title(f"Performance by decile", fontsize=20)
     ax[1, 1].grid()
-    ax[1, 1].legend(fontsize=15)
+    ax[1, 1].legend(fontsize=7)
 
     ############################################## Perf horizon
     ptf_and_bench["strategy_cum_returns"]
@@ -261,14 +261,14 @@ def plot_from_trade_df(
         day for day in range(5, ptf_and_bench["strategy_cum_returns"].shape[0] // 3, 30)
     ]
     bench_expected_return_profile = [
-        ptf_and_bench["cum_returns"]
+        ptf_and_bench["returns"]
         .rolling(window)
         .apply(lambda prices: (prices.iloc[-1] / prices.iloc[0]) - 1)
         .mean()
         for window in windows_bh
     ]
     ptf_expected_return_profile = [
-        ptf_and_bench["strategy_cum_returns"]
+        ptf_and_bench["strategy_returns"]
         .rolling(window)
         .apply(lambda prices: (prices.iloc[-1] / prices.iloc[0]) - 1)
         .mean()

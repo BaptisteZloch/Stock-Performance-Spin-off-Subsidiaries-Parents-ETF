@@ -6,17 +6,14 @@ import numpy as np
 from tqdm import tqdm
 from backtest.metrics import drawdown
 from backtest.reports import plot_from_trade_df, print_portfolio_strategy_report
-from data.universe import Universe
 from strategy.allocation import ALLOCATION_DICT
 from utility.types import (
     AllocationMethodsEnum,
     SpinOff,
-    RebalanceFrequencyEnum,
 )
 
 from utility.utils import (
     compute_weights_drift,
-    get_rebalance_dates,
 )
 
 
@@ -53,11 +50,11 @@ class Backtester:
     def run_backtest(
         self,
         allocation_type: AllocationMethodsEnum,
-        spin_off_events_annoucement: Dict[datetime, List[SpinOff]],
+        spin_off_events_announcement: Dict[datetime, List[SpinOff]],
         holding_period_in_months: Optional[int] = None,
         backtest_type: Literal["subsidiaries", "parents"] = "parents",
         transaction_cost: float = 0.010,
-        days_holding_securities_before_spin_off: Optional[int] = None,
+        hold_parent_before_spin_off: bool = True,
         verbose: bool = True,
         print_metrics: bool = True,
         plot_performance: bool = True,
@@ -86,9 +83,9 @@ class Backtester:
         ), "Error provide a dataframe with datetime index"
         returns_histo = pd.Series(name="strategy_returns", dtype=float)
         weights_histo: List[Dict[str, float]] = []
-        # Create in the same format as the spin_off_events_annoucement but instead on announcement date as key it is the ex-date
+        # Create in the same format as the spin_off_events_announcement but instead on announcement date as key it is the ex-date
         spin_off_events_list = [
-            sp for _, v in spin_off_events_annoucement.items() for sp in v
+            sp for _, v in spin_off_events_announcement.items() for sp in v
         ]
         spin_off_events_list.sort(key=lambda spinoff: spinoff.spin_off_ex_date)
         spin_off_events = {
@@ -106,32 +103,58 @@ class Backtester:
             total=self.__universe_returns.shape[0],
             leave=False,
         ):
-            # if (
-            #     index in spin_off_events_annoucement.keys() or first_rebalance is False
-            # ) and backtest_type == "parents":
-            #     assets = Universe.get_universe_securities()
-            #     first_rebalance = True
-            #     if verbose:
-            #         print(f"Rebalancing the portfolio on {index}...")
-            #     weights = ALLOCATION_DICT[allocation_type](
-            #         assets,
-            #         self.__universe_returns[assets].loc[:index]
-            #         # self.__universe_returns.columns, self.__universe_returns.loc[:index]
-            #     )
-            #     # Row returns with applied fees
-            #     returns = (
-            #         self.__universe_returns[list(weights.keys())].loc[index].to_numpy()
-            #         - transaction_cost
-            #     )
-            # el
-            if index in spin_off_events.keys():
+            if (
+                index in spin_off_events_announcement.keys()
+                and backtest_type == "parents"
+                and hold_parent_before_spin_off is True
+            ):
                 # We get the securities in the portfolio and filter in order to remove the
                 # assets where the holding period is > than the threshold
                 securities_and_holding_periods = {
                     k: v
                     for k, v in securities_and_holding_periods.items()  # Iteration over the securities and their current holding period
                     if v / self.TRADING_DAYS_IN_A_MONTH
-                    < holding_period_in_months  # Filter based on theur current holding period
+                    < holding_period_in_months  # Filter based on their current holding period
+                }
+
+                # Get the subsidiary or parents to add to the portfolio
+                for assets_to_add in map(
+                    lambda x: x.parent_company,
+                    spin_off_events_announcement.get(
+                        index
+                    ),  # This is a list of SpinOff object,
+                ):
+                    if assets_to_add not in securities_and_holding_periods.keys():
+                        securities_and_holding_periods[
+                            assets_to_add
+                        ] = 0  # Add the asset to the portfolio with zero day holding period
+
+                # get their names only
+                assets_in_portfolio = list(securities_and_holding_periods.keys())
+                if verbose:
+                    print(
+                        f"Rebalancing the portfolio on due to spin off announcement on {index}..."
+                    )
+                # Create weights dictionary for allocation given an allocation method.
+                # The allocation method needs assets and their corresponding weights
+                weights = ALLOCATION_DICT[allocation_type](
+                    assets_in_portfolio,
+                    self.__universe_returns[assets_in_portfolio].loc[:index],
+                )
+                returns = (
+                    self.__universe_returns[list(weights.keys())]
+                    .loc[index]
+                    .to_numpy()  # Get the latest returns
+                    - transaction_cost  # Substract transaction costs
+                )
+            elif index in spin_off_events.keys():
+                # We get the securities in the portfolio and filter in order to remove the
+                # assets where the holding period is > than the threshold
+                securities_and_holding_periods = {
+                    k: v
+                    for k, v in securities_and_holding_periods.items()  # Iteration over the securities and their current holding period
+                    if v / self.TRADING_DAYS_IN_A_MONTH
+                    < holding_period_in_months  # Filter based on their current holding period
                 }
 
                 # Get the subsidiary or parents to add to the portfolio
@@ -141,14 +164,17 @@ class Backtester:
                     else x.subsidiary_company,
                     spin_off_events.get(index),  # This is a list of SpinOff object,
                 ):
-                    securities_and_holding_periods[
-                        assets_to_add
-                    ] = 0  # Add the asset to the portfolio with zero day holding period
+                    if assets_to_add not in securities_and_holding_periods.keys():
+                        securities_and_holding_periods[
+                            assets_to_add
+                        ] = 0  # Add the asset to the portfolio with zero day holding period
 
                 # get their names only
                 assets_in_portfolio = list(securities_and_holding_periods.keys())
                 if verbose:
-                    print(f"Rebalancing the portfolio on due to spin off on {index}...")
+                    print(
+                        f"Rebalancing the portfolio on due to spin off event on {index}..."
+                    )
                 # Create weights dictionary for allocation given an allocation method.
                 # The allocation method needs assets and their corresponding weights
                 weights = ALLOCATION_DICT[allocation_type](
@@ -177,7 +203,7 @@ class Backtester:
                     k: v
                     for k, v in securities_and_holding_periods.items()  # Iteration over the securities and their current holding period
                     if v / self.TRADING_DAYS_IN_A_MONTH
-                    < holding_period_in_months  # Filter based on theur current holding period
+                    < holding_period_in_months  # Filter based on their current holding period
                 }
 
                 # get their names only
