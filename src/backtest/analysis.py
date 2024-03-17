@@ -2,7 +2,7 @@ import pandas as pd
 from utility.types import SpinOff
 
 
-def get_around_spin_off_parent_behavior(
+def get_spin_off_parent_behavior(
     universe_returns: pd.DataFrame, spin_off: SpinOff, days_before: int, day_after: int
 ):
     assert (
