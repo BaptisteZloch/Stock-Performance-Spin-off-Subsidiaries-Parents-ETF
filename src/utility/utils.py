@@ -1,10 +1,11 @@
 from datetime import date, datetime
-from typing import Dict, List, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union
 import numpy as np
 import numpy.typing as npt
-
+from numbers import Number
 import pandas as pd
-
+import pytz
+import blpapi
 from utility.types import RebalanceFrequencyEnum
 
 
@@ -59,3 +60,139 @@ def compute_weights_drift(
 
 def is_business_day(date_to_check: Union[datetime, date, str, pd.Timestamp]):
     return bool(len(pd.bdate_range(date_to_check, date_to_check)))
+
+
+####################################### BELOW FOR BLOOMBERG API ONLY #######################################
+
+
+def datetime_converter(value: Union[str, date, datetime]) -> pd.Timestamp:
+    ts = pd.Timestamp(value)
+    if ts.tz:
+        ts = ts.tz_convert(pytz.FixedOffset(ts.tz.getOffsetInMinutes()))
+    return ts
+
+
+def element_to_value(elem: blpapi.Element) -> Union[pd.Timestamp, str, Number, None]:
+    """Convert a blpapi.Element to its value defined in its datatype with some possible coercisions.
+
+    datetime -> pd.Timestamp
+    date -> pd.Timestamp
+    blp.name.Name -> str
+    null value -> None
+    ValueError Exception -> None
+
+    Args:
+        elem: Element to convert
+
+    Returns: A value
+
+    """
+    if elem.isNull():
+        return None
+    else:
+        try:
+            value = elem.getValue()
+            if isinstance(value, blpapi.name.Name):
+                return str(value)
+            if isinstance(value, datetime) or isinstance(value, date):
+                return datetime_converter(value)
+
+            return value
+        except ValueError:
+            return None
+
+
+def _element_to_dict(elem: Union[str, blpapi.Element]) -> Any:
+    if isinstance(elem, str):
+        return elem
+    dtype = elem.datatype()
+    if dtype == blpapi.DataType.CHOICE:
+        return {f"{elem.name()}": _element_to_dict(elem.getChoice())}
+    elif elem.isArray():
+        return [_element_to_dict(v) for v in elem.values()]
+    elif dtype == blpapi.DataType.SEQUENCE:
+        return {
+            f"{elem.name()}": {
+                f"{e.name()}": _element_to_dict(e) for e in elem.elements()
+            }
+        }
+    else:
+        return element_to_value(elem)
+
+
+def element_to_dict(elem: blpapi.Element) -> Dict:
+    """Convert a blpapi.Element to an equivalent dictionary representation.
+
+    Args:
+        elem: A blpapi.Element
+
+    Returns: A dictionary representation of blpapi.Element
+
+    """
+    return _element_to_dict(elem)
+
+
+def message_to_dict(msg: blpapi.Message) -> Dict:
+    """Convert a blpapi.Message to a dictionary representation.
+
+    Args:
+        msg: A blpapi.Message
+
+    Returns: A dictionary with relevant message metadata and data
+
+    """
+    return {
+        "fragmentType": msg.fragmentType() if hasattr(msg, "fragmentType") else None,
+        "correlationIds": [cid.value() for cid in msg.correlationIds()],
+        "messageType": f"{msg.messageType()}",
+        "timeReceived": _get_time_received(msg),
+        "element": element_to_dict(msg.asElement()),
+    }
+
+
+def _get_time_received(msg: blpapi.Message) -> Optional[pd.Timestamp]:
+    try:
+        return datetime_converter(msg.timeReceived())
+    except ValueError:
+        return None
+
+
+def dict_to_req(request: blpapi.Request, request_data: Dict) -> blpapi.Request:
+    """Populate request with data from request_data.
+
+    Args:
+        request: Request to populate
+        request_data: Data used for populating the request
+
+    Returns: A blpapi.Request
+
+    Notes: An example request data dictionary is
+
+      rdata = {'fields': ['SETTLE_DT'], 'securities': ['AUD Curncy'],
+               'overrides': [{'overrides': {'fieldId': 'REFERENCE_DATE', 'value': '20180101'}}]}
+
+    """
+    for key, value in request_data.items():
+        elem = request.getElement(key)
+        if elem.datatype() == blpapi.DataType.SEQUENCE:
+            for elem_dict in value:
+                if elem.isArray():
+                    el = elem.appendElement()
+                    for k, vv in elem_dict[key].items():
+                        el.setElement(k, vv)
+                else:
+                    elem.setElement(elem_dict, value[elem_dict])
+        elif elem.isArray():
+            for v in value:
+                elem.appendValue(v)
+        elif elem.datatype() == blpapi.DataType.CHOICE:
+            for k, v in value.items():
+                c = elem.getElement(k)
+                if c.isArray():
+                    for v_i in v:
+                        c.appendValue(v_i)
+                else:
+                    c.setValue(v)
+        else:
+            elem.setValue(value)
+    return request
