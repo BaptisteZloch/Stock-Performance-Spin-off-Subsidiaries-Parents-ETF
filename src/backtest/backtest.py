@@ -8,7 +8,7 @@ from backtest.metrics import drawdown
 from backtest.reports import plot_from_trade_df, print_portfolio_strategy_report
 from data.universe import Universe
 from strategy.allocation import ALLOCATION_DICT
-from utility.constants import TRADING_DAYS_IN_A_MONTH
+from utility.constants import LONG_SHORT_DICT, TRADING_DAYS_IN_A_MONTH
 from utility.types import (
     AllocationMethodsEnum,
 )
@@ -68,6 +68,7 @@ class Backtester:
         holding_period_in_months: Optional[int] = None,
         backtest_type: Literal["subsidiaries", "parents"] = "parents",
         transaction_cost: float = 0.010,
+        position_type: Literal["long", "short"] = "long",
         hold_parent_before_spin_off: bool = True,
         verbose: bool = True,
         print_metrics: bool = True,
@@ -81,6 +82,7 @@ class Backtester:
              holding_period_in_months (Optional[int]): The holding period in month. None means owning stocks until the end of the backtest. Usually the holding period is between 12 and 36 months. Defaults to None.
              backtest_type (Literal[&quot;subsidiaries&quot;, &quot;parents&quot;], optional): _description_. Defaults to "parents".
              transaction_cost (float, optional): The transaction costs. Defaults to 0.010.
+             position_type (Literal[&quot;long&quot;,&quot;short&quot;], optional): _description_. Defaults to "long".
              verbose (bool, optional): Print rebalance dates... Defaults to True.
              print_metrics (bool, optional): Print the metrics of the strategy. Defaults to True.
              plot_performance (bool, optional): Plot several Chart showing the performances of the strategy. Defaults to True.
@@ -278,7 +280,9 @@ class Backtester:
             # Create numpy weights for matrix operations
             weights_np = np.array(list(weights.values()))
             # Append the current return to the list
-            returns_histo.loc[index] = returns @ weights_np
+            returns_histo.loc[index] = LONG_SHORT_DICT.get(position_type, 1) * (
+                returns @ weights_np
+            )
 
             # Compute the weight drift due to assets price fluctuations
             weights = compute_weights_drift(

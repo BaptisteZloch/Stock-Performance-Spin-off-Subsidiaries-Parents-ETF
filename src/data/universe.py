@@ -32,6 +32,8 @@ class Universe:
             start_date = datetime.strptime(start_date, "%Y-%m-%d")
         if isinstance(end_date, str):
             end_date = datetime.strptime(end_date, "%Y-%m-%d")
+        assert start_date < end_date, "Error, provide end_date after start_date."
+        assert start_date.year >= 2000, "Error, provide a start_date after 2000-01-01."
         self.__START_DATE = start_date
         self.__END_DATE = end_date
 

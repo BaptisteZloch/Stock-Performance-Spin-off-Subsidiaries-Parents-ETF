@@ -17,10 +17,21 @@ def print_portfolio_strategy_report(
     portfolio_returns: pd.Series,
     benchmark_returns: Optional[pd.Series] = None,
 ) -> pd.DataFrame:
+    """_summary_
+
+    Args:
+        portfolio_returns (pd.Series): The daily returns series of the strategy
+        benchmark_returns (Optional[pd.Series], optional): The benchmark series daily returns. Defaults to None.
+
+    Returns:
+        pd.DataFrame: The metrics DataFrame
+    """
     report_df = construct_report_dataframe(portfolio_returns, benchmark_returns)
     if benchmark_returns is not None:
         print(f"\n{'  Returns statistical information  ':-^50}")
-
+        print(
+            f"Overall performance: {100*((1+portfolio_returns).prod()-1):.2f} % vs {100*((1+benchmark_returns).prod()-1):.2f} % (benchmark)"
+        )
         print(
             f"Expected return annualized: {100*report_df.loc['Expected return', 'Portfolio']:.2f} % vs {100*report_df.loc['Expected return', 'Benchmark']:.2f} % (benchmark)"
         )
@@ -29,6 +40,12 @@ def print_portfolio_strategy_report(
         )
         print(
             f"Expected volatility annualized: {100*report_df.loc['Expected volatility', 'Portfolio']:.2f} % vs {100*report_df.loc['Expected volatility', 'Benchmark']:.2f} % (benchmark)"
+        )
+        print(
+            f"Expected volatility monthly: {100*(portfolio_returns.std()*(21**0.5)):.2f} % vs {100*benchmark_returns.std()*(21**0.5):.2f} % (benchmark)"
+        )
+        print(
+            f"Expected volatility daily: {100*(portfolio_returns.std()):.2f} % vs {100*benchmark_returns.std():.2f} % (benchmark)"
         )
         print(
             f"Specific volatility (diversifiable) annualized: {100*report_df.loc['Specific risk', 'Portfolio'] :.2f} %"
