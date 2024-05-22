@@ -298,7 +298,7 @@ def plot_from_trade_df(
 
     ax[2, 0].plot(
         ptf_and_bench.index,
-        ptf_and_bench["strategy_cum_returns"]
+        ptf_and_bench["strategy_returns"]
         .rolling(n_rolling)
         .apply(
             lambda rets: (252 * rets.mean()) / (rets.std() * (252**0.5)),
@@ -309,7 +309,7 @@ def plot_from_trade_df(
     )
     ax[2, 0].plot(
         ptf_and_bench.index,
-        ptf_and_bench["cum_returns"]
+        ptf_and_bench["returns"]
         .rolling(n_rolling)
         .apply(
             lambda rets: (252 * rets.mean()) / (rets.std() * (252**0.5)),

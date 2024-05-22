@@ -1,5 +1,5 @@
-from datetime import datetime
-from typing import Literal
+from datetime import date, datetime
+from typing import Literal, Optional, Union
 import pandas as pd
 
 from data.bloomberg_api import BlpQuery
@@ -63,23 +63,107 @@ class Benchmark:
         benchmark_ticker: Literal[
             "RTY Index", "SPX Index", "SX5E Index", "SXXP Index"
         ] = "RTY Index",
+        start_date: Optional[Union[date, datetime, str]] = None,
+        end_date: Optional[Union[date, datetime, str]] = None,
     ) -> pd.Series:
-        return self.__bench_history[benchmark_ticker].pct_change().fillna(0)
+        if start_date is not None and end_date is not None:
+            if isinstance(start_date, str):
+                start_date = datetime.strptime(start_date, "%Y-%m-%d")
+            if isinstance(end_date, str):
+                end_date = datetime.strptime(end_date, "%Y-%m-%d")
+            return (
+                self.__bench_history[benchmark_ticker]
+                .loc[start_date:end_date]
+                .pct_change()
+                .fillna(0)
+            )
+        elif end_date is not None:
+            if isinstance(end_date, str):
+                end_date = datetime.strptime(end_date, "%Y-%m-%d")
+            return (
+                self.__bench_history[benchmark_ticker]
+                .loc[:end_date]
+                .pct_change()
+                .fillna(0)
+            )
+        elif start_date is not None:
+            if isinstance(start_date, str):
+                start_date = datetime.strptime(start_date, "%Y-%m-%d")
+            return (
+                self.__bench_history[benchmark_ticker]
+                .loc[start_date:]
+                .pct_change()
+                .fillna(0)
+            )
+        else:
+            return self.__bench_history[benchmark_ticker].pct_change().fillna(0)
 
     def get_benchmark_history(
         self,
         benchmark_ticker: Literal[
             "RTY Index", "SPX Index", "SX5E Index", "SXXP Index"
         ] = "RTY Index",
+        start_date: Optional[Union[date, datetime, str]] = None,
+        end_date: Optional[Union[date, datetime, str]] = None,
     ) -> pd.Series:
-        return self.__bench_history[benchmark_ticker]
+        if start_date is not None and end_date is not None:
+            if isinstance(start_date, str):
+                start_date = datetime.strptime(start_date, "%Y-%m-%d")
+            if isinstance(end_date, str):
+                end_date = datetime.strptime(end_date, "%Y-%m-%d")
+            return self.__bench_history[benchmark_ticker].loc[start_date:end_date]
+        elif end_date is not None:
+            if isinstance(end_date, str):
+                end_date = datetime.strptime(end_date, "%Y-%m-%d")
+            return self.__bench_history[benchmark_ticker].loc[:end_date]
+        elif start_date is not None:
+            if isinstance(start_date, str):
+                start_date = datetime.strptime(start_date, "%Y-%m-%d")
+            return self.__bench_history[benchmark_ticker].loc[start_date:]
+        else:
+            return self.__bench_history[benchmark_ticker]
 
     def get_benchmark_perf(
         self,
         benchmark_ticker: Literal[
             "RTY Index", "SPX Index", "SX5E Index", "SXXP Index"
         ] = "RTY Index",
+        start_date: Optional[Union[date, datetime, str]] = None,
+        end_date: Optional[Union[date, datetime, str]] = None,
     ) -> pd.Series:
-        return (
-            self.__bench_history[benchmark_ticker].pct_change().fillna(0) + 1
-        ).cumprod()
+        if start_date is not None and end_date is not None:
+            if isinstance(start_date, str):
+                start_date = datetime.strptime(start_date, "%Y-%m-%d")
+            if isinstance(end_date, str):
+                end_date = datetime.strptime(end_date, "%Y-%m-%d")
+            return (
+                self.__bench_history[benchmark_ticker]
+                .loc[start_date:end_date]
+                .pct_change()
+                .fillna(0)
+                + 1
+            ).cumprod()
+        elif end_date is not None:
+            if isinstance(end_date, str):
+                end_date = datetime.strptime(end_date, "%Y-%m-%d")
+            return (
+                self.__bench_history[benchmark_ticker]
+                .loc[:end_date]
+                .pct_change()
+                .fillna(0)
+                + 1
+            ).cumprod()
+        elif start_date is not None:
+            if isinstance(start_date, str):
+                start_date = datetime.strptime(start_date, "%Y-%m-%d")
+            return (
+                self.__bench_history[benchmark_ticker]
+                .loc[start_date:]
+                .pct_change()
+                .fillna(0)
+                + 1
+            ).cumprod()
+        else:
+            return (
+                self.__bench_history[benchmark_ticker].pct_change().fillna(0) + 1
+            ).cumprod()

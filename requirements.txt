@@ -13,3 +13,4 @@ streamlit
 yfinance
 scikit-learn
 quant_invest_lab
+strenum

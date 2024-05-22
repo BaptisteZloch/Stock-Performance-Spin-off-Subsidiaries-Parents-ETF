@@ -7,23 +7,23 @@ from tqdm import tqdm
 from backtest.metrics import drawdown
 from backtest.reports import plot_from_trade_df, print_portfolio_strategy_report
 from strategy.allocation import ALLOCATION_DICT
+from utility.constants import TRADING_DAYS_IN_A_MONTH
 from utility.types import (
     AllocationMethodsEnum,
-    SpinOff,
 )
 
 from utility.utils import (
     compute_weights_drift,
+    wrangle_spin_off_dataframe,
 )
 
 
 class Backtester:
-    TRADING_DAYS_IN_A_MONTH = 21
-
     def __init__(
         self,
         universe_returns: pd.DataFrame,
         benchmark_returns: pd.Series,
+        spin_off_dataframe: pd.DataFrame,
     ) -> None:
         """Constructor for the backtester class
 
@@ -31,6 +31,7 @@ class Backtester:
         ----
             universe_returns (pd.DataFrame): The returns of the universe each columns is an asset, each row represent a date and returns for the assets. The DataFrame must have a `DatetimeIndex` with freq=B.
             benchmark_returns (pd.Series): The returns of the benchmark in order to measure the performance of the backtest. The Series must have a `DatetimeIndex` with freq=B.
+            spin_off_dataframe (pd.DataFrame): dataframe with spin off using the `get_spin_off_history` function.
         """
         lower_bound = max(
             [
@@ -46,11 +47,25 @@ class Backtester:
         )
         self.__universe_returns = universe_returns.loc[lower_bound:upper_bound]
         self.__benchmark_returns = benchmark_returns.loc[lower_bound:upper_bound]
+        self.__spin_off_dataframe = spin_off_dataframe
+        # This for loop removes the securities that are not tradable after the spin off (i.e not retrieved with bloomberg so we remove the spin off)
+        for col in list(
+            set(self.__spin_off_dataframe["SPINOFF_TICKER_PARENT"].tolist()).union(
+                set(self.__spin_off_dataframe["SPINOFF_TICKER"].tolist())
+            )
+        ):
+            if (
+                col not in self.__universe_returns.columns
+            ):  # Check if spin off exists in the price dataframe
+                # Filter it out
+                self.__spin_off_dataframe = self.__spin_off_dataframe[
+                    (self.__spin_off_dataframe["SPINOFF_TICKER_PARENT"] != col)
+                    & (self.__spin_off_dataframe["SPINOFF_TICKER"] != col)
+                ]
 
     def run_backtest(
         self,
         allocation_type: AllocationMethodsEnum,
-        spin_off_events_announcement: Dict[datetime, List[SpinOff]],
         holding_period_in_months: Optional[int] = None,
         backtest_type: Literal["subsidiaries", "parents"] = "parents",
         transaction_cost: float = 0.010,
@@ -64,7 +79,6 @@ class Backtester:
 
          Args:
              allocation_type (AllocationMethodsEnum): The allocation method to use. Only Equally weighted here.
-             spin_off_events (Dict[datetime, List[SpinOff]]): a dictionary with keys as spin off announcement date and values as list of SpinOff object containing the parent company and the subsidiary created the spin off ex_date.
              holding_period_in_months (Optional[int]): The holding period in month. None means owning stocks until the end of the backtest. Usually the holding period is between 12 and 36 months. Defaults to None.
              backtest_type (Literal[&quot;subsidiaries&quot;, &quot;parents&quot;], optional): _description_. Defaults to "parents".
              transaction_cost (float, optional): The transaction costs. Defaults to 0.010.
@@ -81,8 +95,14 @@ class Backtester:
         assert isinstance(
             self.__universe_returns.index, pd.DatetimeIndex
         ), "Error provide a dataframe with datetime index"
-        returns_histo = pd.Series(name="strategy_returns", dtype=float)
-        weights_histo: List[Dict[str, float]] = []
+        returns_histo = pd.Series(
+            name="strategy_returns", dtype=float
+        )  # Will store the returns of the portfolio
+        weights_histo: List[Dict[str, float]] = []  # Will store the weights
+
+        spin_off_events_announcement = wrangle_spin_off_dataframe(
+            self.__spin_off_dataframe
+        )
         # Create in the same format as the spin_off_events_announcement but instead on announcement date as key it is the ex-date
         spin_off_events_list = [
             sp for _, v in spin_off_events_announcement.items() for sp in v
@@ -104,7 +124,7 @@ class Backtester:
             leave=False,
         ):
             if (
-                index in spin_off_events_announcement.keys()
+                index.date() in spin_off_events_announcement.keys()
                 and backtest_type == "parents"
                 and hold_parent_before_spin_off is True
             ):
@@ -113,7 +133,7 @@ class Backtester:
                 securities_and_holding_periods = {
                     k: v
                     for k, v in securities_and_holding_periods.items()  # Iteration over the securities and their current holding period
-                    if v / self.TRADING_DAYS_IN_A_MONTH
+                    if v / TRADING_DAYS_IN_A_MONTH
                     < holding_period_in_months  # Filter based on their current holding period
                 }
 
@@ -121,7 +141,7 @@ class Backtester:
                 for assets_to_add in map(
                     lambda x: x.parent_company,
                     spin_off_events_announcement.get(
-                        index
+                        index.date()
                     ),  # This is a list of SpinOff object,
                 ):
                     if assets_to_add not in securities_and_holding_periods.keys():
@@ -133,7 +153,7 @@ class Backtester:
                 assets_in_portfolio = list(securities_and_holding_periods.keys())
                 if verbose:
                     print(
-                        f"Rebalancing the portfolio on due to spin off announcement on {index}..."
+                        f"Rebalancing the portfolio on due to spin off announcement on {index.date()}..."
                     )
                 # Create weights dictionary for allocation given an allocation method.
                 # The allocation method needs assets and their corresponding weights
@@ -147,13 +167,13 @@ class Backtester:
                     .to_numpy()  # Get the latest returns
                     - transaction_cost  # Substract transaction costs
                 )
-            elif index in spin_off_events.keys():
+            elif index.date() in spin_off_events.keys():
                 # We get the securities in the portfolio and filter in order to remove the
                 # assets where the holding period is > than the threshold
                 securities_and_holding_periods = {
                     k: v
                     for k, v in securities_and_holding_periods.items()  # Iteration over the securities and their current holding period
-                    if v / self.TRADING_DAYS_IN_A_MONTH
+                    if v / TRADING_DAYS_IN_A_MONTH
                     < holding_period_in_months  # Filter based on their current holding period
                 }
 
@@ -162,7 +182,9 @@ class Backtester:
                     lambda x: x.parent_company
                     if backtest_type == "parents"
                     else x.subsidiary_company,
-                    spin_off_events.get(index),  # This is a list of SpinOff object,
+                    spin_off_events.get(
+                        index.date()
+                    ),  # This is a list of SpinOff object,
                 ):
                     if assets_to_add not in securities_and_holding_periods.keys():
                         securities_and_holding_periods[
@@ -173,7 +195,7 @@ class Backtester:
                 assets_in_portfolio = list(securities_and_holding_periods.keys())
                 if verbose:
                     print(
-                        f"Rebalancing the portfolio on due to spin off event on {index}..."
+                        f"Rebalancing the portfolio on due to spin off event on {index.date()}..."
                     )
                 # Create weights dictionary for allocation given an allocation method.
                 # The allocation method needs assets and their corresponding weights
@@ -192,7 +214,7 @@ class Backtester:
                     [
                         k
                         for k, v in securities_and_holding_periods.items()  # Iteration over the securities and their current holding period
-                        if v / self.TRADING_DAYS_IN_A_MONTH >= holding_period_in_months
+                        if v / TRADING_DAYS_IN_A_MONTH >= holding_period_in_months
                     ]
                 )
                 > 0
@@ -202,7 +224,7 @@ class Backtester:
                 securities_and_holding_periods = {
                     k: v
                     for k, v in securities_and_holding_periods.items()  # Iteration over the securities and their current holding period
-                    if v / self.TRADING_DAYS_IN_A_MONTH
+                    if v / TRADING_DAYS_IN_A_MONTH
                     < holding_period_in_months  # Filter based on their current holding period
                 }
 
@@ -216,12 +238,12 @@ class Backtester:
                     weights = {self.__benchmark_returns.name: 1.0}
                     if verbose:
                         print(
-                            f"Rebalancing the portfolio on due to nothing in the portfolio at {index}... (No more securities in the portfolio)"
+                            f"Rebalancing the portfolio on due to nothing in the portfolio at {index.date()}... (No more securities in the portfolio)"
                         )
                 else:
                     if verbose:
                         print(
-                            f"Rebalancing the portfolio on due to max holding period reached {index}..."
+                            f"Rebalancing the portfolio on due to max holding period reached {index.date()}..."
                         )
                     # Create weights dictionary for allocation given an allocation method.
                     # The allocation method needs assets and their corresponding weights

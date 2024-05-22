@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Literal
 from strenum import StrEnum
 
 
+Indexes = Literal["RTY Index", "SPX Index", "SX5E Index", "SXXP Index"]
 @dataclass
 class SpinOff:
     parent_company: str

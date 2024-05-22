@@ -6,7 +6,7 @@ from numbers import Number
 import pandas as pd
 import pytz
 import blpapi
-from utility.types import RebalanceFrequencyEnum
+from utility.types import RebalanceFrequencyEnum, SpinOff
 
 
 def get_rebalance_dates(
@@ -31,6 +31,38 @@ def get_rebalance_dates(
     return set(
         [start_date] + pd.date_range(start_date, end_date, freq=frequency).to_list()
     )
+
+
+def wrangle_spin_off_dataframe(
+    spin_off_dataframe: pd.DataFrame,
+) -> Dict[date, List[SpinOff]]:
+    """Clean the spin off dataframe and convert it into a dict with special format that will be used in the backtester
+
+    Args:
+        spin_off_dataframe (pd.DataFrame): The spin off dataframe bloomberg.
+
+    Returns:
+        Dict[date, List[SpinOff]]: The desired formatted dict.
+    """
+    spin_off_announcements = {}
+    for index, row in spin_off_dataframe.iterrows():
+        if row["ANNOUNCED_DATE"].date() in spin_off_announcements.keys():
+            spin_off_announcements[row["ANNOUNCED_DATE"].date()].append(
+                SpinOff(
+                    parent_company=row["SPINOFF_TICKER_PARENT"],
+                    subsidiary_company=row["SPINOFF_TICKER"],
+                    spin_off_ex_date=row["EFFECTIVE_DATE"].date(),
+                )
+            )
+        else:
+            spin_off_announcements[row["ANNOUNCED_DATE"].date()] = [
+                SpinOff(
+                    parent_company=row["SPINOFF_TICKER_PARENT"],
+                    subsidiary_company=row["SPINOFF_TICKER"],
+                    spin_off_ex_date=row["EFFECTIVE_DATE"].date(),
+                )
+            ]
+    return spin_off_announcements
 
 
 def compute_weights_drift(

@@ -1,6 +1,8 @@
 import blpapi
+INDEXES = ["RTY Index", "SPX Index", "SX5E Index", "SXXP Index"]
 
 TRADING_DAYS = 252
+TRADING_DAYS_IN_A_MONTH = 21
 BBG_HOST = "localhost"
 BBG_PORT = 8194
 MONTH_BBG_MAP = {v: k for k, v in zip("FGHJKMNQUVXZ", range(1, 13))}
