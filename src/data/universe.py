@@ -3,6 +3,7 @@ from typing import Iterable, Literal, Optional, Union
 import yfinance as yf
 import pandas as pd
 
+from data.benchmark import Benchmark
 from data.bloomberg_api import BlpQuery
 from utility.constants import INDEXES
 from utility.types import Indexes
@@ -34,7 +35,16 @@ class Universe:
         self.__START_DATE = start_date
         self.__END_DATE = end_date
 
-    def get_price_history_from_spinoff(self) -> pd.DataFrame:
+        self.__BENCH_OBJ = Benchmark()
+
+    def get_benchmark_returns(self) -> pd.Series:
+        return self.__BENCH_OBJ.get_benchmark_returns(
+            benchmark_ticker=self.__INDEX_UNIVERSE,
+            start_date=self.__START_DATE,
+            end_date=self.__END_DATE,
+        )
+
+    def get_returns_history_from_spinoff(self) -> pd.DataFrame:
         if self.spinoff_price_returns_dataframe is None:
             self.spin_off_raw_dataframe = self.get_spin_off_history()
             bquery = BlpQuery().start()

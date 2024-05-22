@@ -152,9 +152,8 @@ def plot_from_trade_df(
     ax[0, 0].plot(ptf_and_bench["cum_returns"], color="blue", label="Benchmark")
     ax[0, 0].set_xlabel("Datetime", fontsize=15)
     ax[0, 0].set_ylabel("Returns", fontsize=15)
-    ax[0, 0].set_title(
-        f"Performance benchmark vs portfolio with regime detected", fontsize=20
-    )
+    ax[0, 0].set_yscale("log")
+    ax[0, 0].set_title(f"Performance benchmark vs portfolio", fontsize=20)
     ax[0, 0].grid()
     ax[0, 0].legend(loc="lower right", fontsize=15)
     ############################################## DRAWDOWN
@@ -216,9 +215,9 @@ def plot_from_trade_df(
     ax[3, 0].set_ylabel("Weights", fontsize=18)
     ax[3, 0].set_title("Portfolio weights evolution over time", fontsize=20)
     ax[3, 0].grid()
-    ax[3, 0].legend(ptf_weights_evolution.columns.to_list(), fontsize=15)
+    ax[3, 0].legend(ptf_weights_evolution.columns.to_list(), fontsize=9)
 
-    ########################################### WEIGHTS DRIFT
+    ########################################### Deciles
     df_rets = pd.DataFrame(
         {
             "returns": ptf_and_bench["returns"],
@@ -256,19 +255,19 @@ def plot_from_trade_df(
     ax[1, 1].legend(fontsize=7)
 
     ############################################## Perf horizon
-    ptf_and_bench["strategy_cum_returns"]
+
     windows_bh = [
         day for day in range(5, ptf_and_bench["strategy_cum_returns"].shape[0] // 3, 30)
     ]
     bench_expected_return_profile = [
-        ptf_and_bench["returns"]
+        ptf_and_bench["cum_returns"]
         .rolling(window)
         .apply(lambda prices: (prices.iloc[-1] / prices.iloc[0]) - 1)
         .mean()
         for window in windows_bh
     ]
     ptf_expected_return_profile = [
-        ptf_and_bench["strategy_returns"]
+        ptf_and_bench["strategy_cum_returns"]
         .rolling(window)
         .apply(lambda prices: (prices.iloc[-1] / prices.iloc[0]) - 1)
         .mean()

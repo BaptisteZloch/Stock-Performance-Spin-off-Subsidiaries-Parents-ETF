@@ -6,6 +6,7 @@ import numpy as np
 from tqdm import tqdm
 from backtest.metrics import drawdown
 from backtest.reports import plot_from_trade_df, print_portfolio_strategy_report
+from data.universe import Universe
 from strategy.allocation import ALLOCATION_DICT
 from utility.constants import TRADING_DAYS_IN_A_MONTH
 from utility.types import (
@@ -19,12 +20,7 @@ from utility.utils import (
 
 
 class Backtester:
-    def __init__(
-        self,
-        universe_returns: pd.DataFrame,
-        benchmark_returns: pd.Series,
-        spin_off_dataframe: pd.DataFrame,
-    ) -> None:
+    def __init__(self, universe_obj: Universe) -> None:
         """Constructor for the backtester class
 
         Args:
@@ -33,6 +29,9 @@ class Backtester:
             benchmark_returns (pd.Series): The returns of the benchmark in order to measure the performance of the backtest. The Series must have a `DatetimeIndex` with freq=B.
             spin_off_dataframe (pd.DataFrame): dataframe with spin off using the `get_spin_off_history` function.
         """
+        universe_returns = universe_obj.get_returns_history_from_spinoff()
+        benchmark_returns = universe_obj.get_benchmark_returns()
+        spin_off_dataframe = universe_obj.get_spin_off_history()
         lower_bound = max(
             [
                 universe_returns.index[0],

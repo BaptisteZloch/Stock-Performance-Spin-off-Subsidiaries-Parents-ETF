@@ -8,7 +8,7 @@ def get_spin_off_parent_behavior(
     assert (
         200 >= days_before > 1 and 200 >= day_after > 1
     ), "Error provide valide day_after and days_before parameter [1,200]"
-    spin_off_indice = universe_returns.index.get_loc(spin_off.spin_off_ex_date)
+    spin_off_indice = universe_returns.index.map(lambda d: d.date()).get_loc(spin_off.spin_off_ex_date)
     return (
         (
             universe_returns[spin_off.parent_company].iloc[
