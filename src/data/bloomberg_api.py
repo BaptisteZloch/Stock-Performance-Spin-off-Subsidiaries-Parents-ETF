@@ -137,7 +137,7 @@ class BlpQuery(BlpSession):
         self._field_column_map: Dict = {}
         self._started = False
         self._services: Dict[str, blpapi.Service] = {}
-        self.timeout = 10000
+        self.timeout = 100000
         super().__init__(BBG_HOST, BBG_PORT, **kwargs)
 
     def __enter__(self):
