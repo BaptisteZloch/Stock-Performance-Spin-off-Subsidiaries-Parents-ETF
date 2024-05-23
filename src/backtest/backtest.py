@@ -313,6 +313,9 @@ class Backtester:
             index=self.__universe_returns.iloc[starting_offset:].index,
             dtype=float,
         ).fillna(0)
+        ptf_weights_df = ptf_weights_df.rename(
+            columns={"returns": self.__benchmark_returns.name}
+        )
 
         if print_metrics is True:
             ptf_metrics_df = print_portfolio_strategy_report(

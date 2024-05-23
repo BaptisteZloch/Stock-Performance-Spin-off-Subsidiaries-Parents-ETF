@@ -160,19 +160,19 @@ def plot_from_trade_df(
         ptf_and_bench (pd.DataFrame): Dataframe containing the returns, cum returns, drawdown for both the strategy portflio and the benchmark
         ptf_weights_evolution (pd.DataFrame): A dataframe with the weights of the portfolio at each date
     """
-    fig, ax = plt.subplots(4, 2, figsize=(25, 30))
+    fig, ax = plt.subplots(4, 2, figsize=(10, 15))
 
     ############################################## Perf and Regimes
     ax[0, 0].plot(
         ptf_and_bench["strategy_cum_returns"], color="orange", label="Portfolio"
     )
     ax[0, 0].plot(ptf_and_bench["cum_returns"], color="blue", label="Benchmark")
-    ax[0, 0].set_xlabel("Datetime", fontsize=15)
-    ax[0, 0].set_ylabel("Returns", fontsize=15)
+    ax[0, 0].set_xlabel("Datetime", fontsize=10)
+    ax[0, 0].set_ylabel("Returns", fontsize=10)
     ax[0, 0].set_yscale("log")
-    ax[0, 0].set_title(f"Performance benchmark vs portfolio", fontsize=20)
+    ax[0, 0].set_title(f"Performance benchmark vs portfolio", fontsize=15)
     ax[0, 0].grid()
-    ax[0, 0].legend(loc="lower right", fontsize=15)
+    ax[0, 0].legend(loc="lower right", fontsize=10)
     ############################################## DRAWDOWN
     ax[1, 0].fill_between(
         ptf_and_bench.index,
@@ -189,14 +189,14 @@ def plot_from_trade_df(
         label="Benchmark drawdown",
     )
 
-    ax[1, 0].set_xlabel("Datetime", fontsize=18)
-    ax[1, 0].set_ylabel("Drawdown", fontsize=18)
+    ax[1, 0].set_xlabel("Datetime", fontsize=15)
+    ax[1, 0].set_ylabel("Drawdown", fontsize=15)
     ax[1, 0].set_title(
         "Underwater (drawdown) plot",
-        fontsize=20,
+        fontsize=15,
     )
     ax[1, 0].grid()
-    ax[1, 0].legend(loc="lower right", fontsize=15)
+    ax[1, 0].legend(loc="lower right", fontsize=10)
     ########################################### HISTORIGRAM
     samples_bench = sorted(ptf_and_bench["returns"].to_numpy())
     samples_strat = sorted(ptf_and_bench["strategy_returns"].to_numpy())
@@ -215,22 +215,22 @@ def plot_from_trade_df(
         label="KDE Benchmark returns",
     )
 
-    ax[0, 1].set_xlabel("Returns", fontsize=18)
-    ax[0, 1].set_ylabel("Density", fontsize=18)
+    ax[0, 1].set_xlabel("Returns", fontsize=15)
+    ax[0, 1].set_ylabel("Density", fontsize=15)
     ax[0, 1].set_title(
         "Returns distribution",
-        fontsize=20,
+        fontsize=15,
     )
     ax[0, 1].grid()
-    ax[0, 1].legend(fontsize=15)
+    ax[0, 1].legend(fontsize=10)
     ########################################### WEIGHTS DRIFT
     ax[3, 0].stackplot(
         ptf_weights_evolution.index,
         ptf_weights_evolution.to_numpy().T,
     )
-    ax[3, 0].set_xlabel("Datetime", fontsize=18)
-    ax[3, 0].set_ylabel("Weights", fontsize=18)
-    ax[3, 0].set_title("Portfolio weights evolution over time", fontsize=20)
+    ax[3, 0].set_xlabel("Datetime", fontsize=15)
+    ax[3, 0].set_ylabel("Weights", fontsize=15)
+    ax[3, 0].set_title("Portfolio weights evolution over time", fontsize=15)
     ax[3, 0].grid()
     ax[3, 0].legend(ptf_weights_evolution.columns.to_list(), fontsize=9)
 
@@ -265,9 +265,9 @@ def plot_from_trade_df(
         color="blue",
         label="Benchmark",
     )
-    ax[1, 1].set_xlabel("Return deciles", fontsize=15)
-    ax[1, 1].set_ylabel("Average return", fontsize=15)
-    ax[1, 1].set_title(f"Performance by decile", fontsize=20)
+    ax[1, 1].set_xlabel("Return deciles", fontsize=10)
+    ax[1, 1].set_ylabel("Average return", fontsize=10)
+    ax[1, 1].set_title(f"Performance by decile", fontsize=15)
     ax[1, 1].grid()
     ax[1, 1].legend(fontsize=7)
 
@@ -302,13 +302,13 @@ def plot_from_trade_df(
         windows_bh, bench_expected_return_profile, color="blue", label="Benchmark"
     )
     ax[2, 1].scatter(windows_bh, bench_expected_return_profile, color="blue")
-    ax[2, 1].set_xlabel("Investment horizon in days", fontsize=15)
-    ax[2, 1].set_ylabel("Returns", fontsize=15)
+    ax[2, 1].set_xlabel("Investment horizon in days", fontsize=10)
+    ax[2, 1].set_ylabel("Returns", fontsize=10)
     ax[2, 1].set_title(
-        f"Expected return with respect to investment horizon", fontsize=20
+        f"Expected return with respect to investment horizon", fontsize=15
     )
     ax[2, 1].grid()
-    ax[2, 1].legend(fontsize=15)
+    ax[2, 1].legend(fontsize=10)
     ############################################## Rolling sharpe ratio
     n_rolling = ptf_and_bench["strategy_cum_returns"].shape[0] // 10
 
@@ -334,11 +334,11 @@ def plot_from_trade_df(
         color="blue",
         label="Benchmark",
     )
-    ax[2, 0].set_xlabel("Datetime", fontsize=15)
-    ax[2, 0].set_ylabel("Returns", fontsize=15)
-    ax[2, 0].set_title(f"{n_rolling}-days rolling Sharpe ratio", fontsize=20)
+    ax[2, 0].set_xlabel("Datetime", fontsize=10)
+    ax[2, 0].set_ylabel("Returns", fontsize=10)
+    ax[2, 0].set_title(f"{n_rolling}-days rolling Sharpe ratio", fontsize=15)
     ax[2, 0].grid()
-    ax[2, 0].legend(fontsize=15)
+    ax[2, 0].legend(fontsize=10)
     ############################################## Omega curve
     thresholds = np.linspace(0.01, 0.75, 100)
     omega_bench = []
@@ -348,9 +348,28 @@ def plot_from_trade_df(
         omega_bench.append(omega_ratio(ptf_and_bench["returns"], threshold))
     ax[3, 1].plot(thresholds, omega_ptf, color="orange", label="Portfolio")
     ax[3, 1].plot(thresholds, omega_bench, color="blue", label="Benchmark")
-    ax[3, 1].set_xlabel("Thresholds", fontsize=15)
-    ax[3, 1].set_ylabel("Omega ratio", fontsize=15)
-    ax[3, 1].set_title(f"Omega curve", fontsize=20)
+    ax[3, 1].set_xlabel("Thresholds", fontsize=10)
+    ax[3, 1].set_ylabel("Omega ratio", fontsize=10)
+    ax[3, 1].set_title(f"Omega curve", fontsize=15)
     ax[3, 1].grid()
-    ax[3, 1].legend(fontsize=15)
-    plt.show()
+    ax[3, 1].legend(fontsize=10)
+
+    PORT_WEIGHTS = pd.DataFrame(
+        {
+            "TICKER": ptf_weights_evolution.iloc[-1].index,
+            "QUANTITY": ptf_weights_evolution.iloc[-1].values,
+        }
+    )
+
+    PORT_WEIGHTS["DATE"] = ptf_weights_evolution.iloc[-1].name
+
+    PORT_WEIGHTS.to_excel(
+        f"./PORT_WEIGHTS_{ptf_weights_evolution.iloc[-1].name.date()}.xlsx", index=False
+    )
+    print("Weights to implement in PORT:")
+    print(ptf_weights_evolution.iloc[-1])
+    print(
+        f"<PORT> file written at ./PORT_WEIGHTS_{ptf_weights_evolution.iloc[-1].name.date()}.xlsx"
+    )
+
+    plt.show()  # will block de code

@@ -1,4 +1,6 @@
 import argparse
+
+import pandas as pd
 from utility.constants import INDEXES
 from utility.types import AllocationMethodsEnum
 from data.universe import Universe
@@ -85,5 +87,4 @@ if __name__ == "__main__":
         verbose=False,
     )
 
-    print("Weights to implement in PORT:")
-    print(ptf_weights_df.iloc[-1])
+    
