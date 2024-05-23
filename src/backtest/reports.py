@@ -353,3 +353,4 @@ def plot_from_trade_df(
     ax[3, 1].set_title(f"Omega curve", fontsize=20)
     ax[3, 1].grid()
     ax[3, 1].legend(fontsize=15)
+    plt.show()

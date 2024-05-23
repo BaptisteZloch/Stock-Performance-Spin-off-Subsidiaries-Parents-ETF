@@ -3,10 +3,11 @@ from typing import Literal, Optional, Union
 import pandas as pd
 
 from data.bloomberg_api import BlpQuery
+from utility.utils import is_notebook
 
 
 class Benchmark:
-    INDICE_DATA_PATH = "../data/Equity_index.xlsx"
+    INDICE_DATA_PATH = "../data/Equity_index.xlsx" if is_notebook() else "./data/Equity_index.xlsx"
 
     def __init__(
         self,

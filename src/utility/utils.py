@@ -94,6 +94,19 @@ def is_business_day(date_to_check: Union[datetime, date, str, pd.Timestamp]):
     return bool(len(pd.bdate_range(date_to_check, date_to_check)))
 
 
+def is_notebook() -> bool:
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == "ZMQInteractiveShell":
+            return True  # Jupyter notebook or qtconsole
+        elif shell == "TerminalInteractiveShell":
+            return False  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False  # Probably standard Python interpreter
+
+
 ####################################### BELOW FOR BLOOMBERG API ONLY #######################################
 
 

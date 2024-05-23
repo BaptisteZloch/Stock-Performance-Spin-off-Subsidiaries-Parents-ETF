@@ -18,18 +18,21 @@ def parse_arguments() -> argparse.Namespace:
         "--index",
         type=str,
         choices=INDEXES,
+        required=True,
         help='The index universe to use (e.g., "RTY Index").',
     )
     parser.add_argument(
         "-s",
         "--start_date",
         type=str,
+        required=True,
         help="The start date for the backtest (YYYY-MM-DD format).",
     )
     parser.add_argument(
         "-e",
         "--end_date",
         type=str,
+        required=True,
         help="The end date for the backtest (YYYY-MM-DD format).",
     )
 
@@ -65,7 +68,7 @@ if __name__ == "__main__":
     args = parse_arguments()
 
     universe_obj = Universe(
-        index_universe=args.index_universe,
+        index_universe=args.index,
         start_date=args.start_date,
         end_date=args.end_date,
     )
