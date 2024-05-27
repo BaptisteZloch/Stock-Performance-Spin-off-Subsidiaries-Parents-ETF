@@ -11,6 +11,7 @@ from backtest.metrics import (
     omega_ratio,
     construct_report_dataframe,
 )
+from utility.utils import is_notebook
 
 
 def print_portfolio_strategy_report(
@@ -160,7 +161,10 @@ def plot_from_trade_df(
         ptf_and_bench (pd.DataFrame): Dataframe containing the returns, cum returns, drawdown for both the strategy portflio and the benchmark
         ptf_weights_evolution (pd.DataFrame): A dataframe with the weights of the portfolio at each date
     """
-    fig, ax = plt.subplots(4, 2, figsize=(10, 15))
+    if is_notebook() is False:
+        fig, ax = plt.subplots(4, 2, figsize=(10, 15))
+    else:
+        fig, ax = plt.subplots(4, 2, figsize=(25, 30))
 
     ############################################## Perf and Regimes
     ax[0, 0].plot(
@@ -371,5 +375,5 @@ def plot_from_trade_df(
     print(
         f"<PORT> file written at ./PORT_WEIGHTS_{ptf_weights_evolution.iloc[-1].name.date()}.xlsx"
     )
-
-    plt.show()  # will block de code
+    if is_notebook() is False:
+        plt.show()  # will block de code
